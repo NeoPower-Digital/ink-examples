@@ -9,3 +9,18 @@ A simple bank contract example where users can:
 
 ## ⚙️ Environment Helpers
 A contract with some of the most common ink! environment types and functions. 
+
+## 🚀 Basics & Basics II
+Simple contracts with basic ink! features:
+-  Environment types
+-  Environment functions
+-  Messages
+   -  Query
+   -  Transaction
+   -  Result (Ok & Errors)
+   -  Payable messages
+- Storage
+  - Get & modify
+  - Mappings
+- Events
+  - Topics

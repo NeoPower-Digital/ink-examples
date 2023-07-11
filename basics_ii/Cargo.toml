@@ -1,5 +1,5 @@
 [package]
-name = "environment_helpers"
+name = "basics_ii"
 version = "0.1.0"
 authors = ["NeoPower Digital <contact@neopower.digital>"]
 edition = "2021"
