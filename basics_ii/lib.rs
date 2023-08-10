@@ -16,9 +16,16 @@ mod basics_ii {
         candidate: AccountId,
     }
 
+    #[derive(Debug)]
+    #[ink::storage_item]
+    pub struct Admin {
+        address: AccountId,
+        modified_date: u64,
+    }
+
     #[ink(storage)]
     pub struct BasicsII {
-        admin: AccountId,
+        admin: Admin,
         votes: Mapping<AccountId, u32>,
         enabled_candidates: Mapping<AccountId, ()>,
     }
@@ -26,8 +33,12 @@ mod basics_ii {
     impl BasicsII {
         #[ink(constructor)]
         pub fn new(admin: AccountId) -> Self {
+            let now = Self::env().block_timestamp();
             Self {
-                admin,
+                admin: Admin {
+                    address: admin,
+                    modified_date: now,
+                },
                 votes: Mapping::default(),
                 enabled_candidates: Mapping::default(),
             }
@@ -35,7 +46,7 @@ mod basics_ii {
 
         #[ink(message)]
         pub fn add_candidate(&mut self, candidate: AccountId) {
-            assert!(self.env().caller() == self.admin);
+            assert!(self.env().caller() == self.admin.address);
             self.enabled_candidates.insert(candidate, &());
             self.env().emit_event(NewCandidate { candidate });
         }
