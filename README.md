@@ -24,3 +24,9 @@ Simple contracts with basic ink! features:
   - Mappings
 - Events
   - Topics
+
+## 🔄 Cross Contract Calling
+An example implementation of ink! cross contract calling, using Contract references & Builders.
+
+## 📜 Traits
+Something similar to an ERC-20 token using traits.
