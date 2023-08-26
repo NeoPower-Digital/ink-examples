@@ -12,21 +12,24 @@ A contract with some of the most common ink! environment types and functions.
 
 ## 🚀 Basics & Basics II
 Simple contracts with basic ink! features:
--  Environment types
--  Environment functions
--  Messages
+-  `Environment types`
+-  `Environment functions`
+-  `Messages`
    -  Query
    -  Transaction
-   -  Result (Ok & Errors)
+   -  `Result` (Ok & Errors)
    -  Payable messages
-- Storage
+- `Storage`
   - Get & modify
-  - Mappings
-- Events
+  - `Mappings`
+- `Events`
   - Topics
 
 ## 🔄 Cross Contract Calling
-An example implementation of ink! cross contract calling, using Contract references & Builders.
+An example implementation of ink! cross contract calling, using `Contract references` & `Builders`.
 
 ## 📜 Traits
-Something similar to an ERC-20 token using traits.
+Something similar to an `ERC-20` token using `traits`.
+
+## ⛓️ Chain Extensions
+Two contracts that connect with a randomness chain extension, using `Custom Environment` and `Chain-extension builder` 
