@@ -16,7 +16,7 @@ mod bank {
         balance: Balance,
     }
 
-    #[derive(PartialEq, Debug, scale::Encode, scale::Decode)]
+    #[derive(PartialEq, Eq, Debug, scale::Encode, scale::Decode)]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub enum ContractError {
         YouAreNotAClient,
@@ -121,10 +121,15 @@ mod bank {
 
     #[cfg(test)]
     mod tests {
+        use ink::env::{
+            test::{default_accounts, set_caller, set_value_transferred, DefaultAccounts},
+            DefaultEnvironment,
+        };
+
         use super::*;
 
-        fn get_default_accounts() -> ink::env::test::DefaultAccounts<ink::env::DefaultEnvironment> {
-            ink::env::test::default_accounts::<ink::env::DefaultEnvironment>()
+        fn get_default_accounts() -> DefaultAccounts<DefaultEnvironment> {
+            default_accounts::<ink::env::DefaultEnvironment>()
         }
 
         fn init() -> (
@@ -134,8 +139,30 @@ mod bank {
             (Bank::new(), get_default_accounts())
         }
 
-        fn set_caller(sender: AccountId) {
-            ink::env::test::set_caller::<ink::env::DefaultEnvironment>(sender);
+        fn set_tx_caller(sender: AccountId) {
+            set_caller::<ink::env::DefaultEnvironment>(sender);
+        }
+
+        fn set_value_to_transfer(amount: u128) {
+            set_value_transferred::<DefaultEnvironment>(amount);
+        }
+
+        #[ink::test]
+        fn deposit_works() {
+            // Arrange
+            let (mut contract, accounts) = init();
+            let caller = accounts.bob;
+            let amount = 1000;
+
+            set_tx_caller(caller);
+            set_value_to_transfer(amount);
+
+            // Act
+            contract.deposit().unwrap();
+            let result = contract.balances.get(caller).unwrap();
+
+            // Assert
+            assert_eq!(result, amount);
         }
 
         #[ink::test]
@@ -147,7 +174,7 @@ mod bank {
             let withdrawal_amount = 600;
 
             contract.balances.insert(caller, &balance_amount);
-            set_caller(caller);
+            set_tx_caller(caller);
 
             // Act
             contract.withdraw(Some(withdrawal_amount)).unwrap();
@@ -162,13 +189,103 @@ mod bank {
             // Arrange
             let (mut contract, accounts) = init();
             let caller = accounts.bob;
-            set_caller(caller);
+            set_tx_caller(caller);
 
             // Act
             let result = contract.withdraw(None);
 
             // Assert
             assert_eq!(result, Err(ContractError::YouAreNotAClient));
+        }
+    }
+
+    #[cfg(all(test, feature = "e2e-tests"))]
+    mod e2e_tests {
+        use super::*;
+        use ink_e2e::build_message;
+
+        type E2EResult<T> = std::result::Result<T, ContractError>;
+
+        #[ink_e2e::test]
+        async fn deposit_works(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
+            // Arrange
+            let constructor = BankRef::new();
+            let contract_account_id = client
+                .instantiate("bank", &ink_e2e::alice(), constructor, 0, None)
+                .await
+                .expect("instantiate failed")
+                .account_id;
+
+            let amount_to_deposit = 1000;
+
+            // Act
+            let deposit =
+                build_message::<BankRef>(contract_account_id.clone()).call(|bank| bank.deposit());
+            client
+                .call(&ink_e2e::bob(), deposit, amount_to_deposit, None)
+                .await
+                .unwrap();
+
+            let get_bob_balance = build_message::<BankRef>(contract_account_id.clone())
+                .call(|bank| bank.get_balance_by_account());
+            let get_bob_balance_res = client
+                .call_dry_run(&ink_e2e::bob(), &get_bob_balance, 0, None)
+                .await;
+
+            // Assert
+            assert!(matches!(
+                get_bob_balance_res.return_value(),
+                Ok(amount_to_deposit)
+            ));
+
+            Ok(())
+        }
+
+        #[ink_e2e::test]
+        async fn withdraw_works_for_valid_client(
+            mut client: ink_e2e::Client<C, E>,
+        ) -> E2EResult<()> {
+            // Arrange
+            let constructor = BankRef::new();
+            let contract_account_id = client
+                .instantiate("bank", &ink_e2e::alice(), constructor, 0, None)
+                .await
+                .expect("instantiate failed")
+                .account_id;
+
+            let deposit_amount = 1000;
+            let withdrawal_amount = 600;
+
+            let deposit =
+                build_message::<BankRef>(contract_account_id.clone()).call(|bank| bank.deposit());
+            client
+                .call(&ink_e2e::bob(), deposit, deposit_amount, None)
+                .await
+                .unwrap();
+
+            // Act
+            let withdraw = build_message::<BankRef>(contract_account_id.clone())
+                .call(|bank| bank.withdraw(Some(withdrawal_amount)));
+            client
+                .call(&ink_e2e::bob(), withdraw, 0, None)
+                .await
+                .unwrap();
+
+            let get_bob_balance = build_message::<BankRef>(contract_account_id.clone())
+                .call(|bank| bank.get_balance_by_account());
+            let get_bob_balance_res = client
+                .call_dry_run(&ink_e2e::bob(), &get_bob_balance, 0, None)
+                .await;
+
+            // Assert
+            let expected_balance = deposit_amount - withdrawal_amount;
+
+            assert!(matches!(
+                get_bob_balance_res.return_value(),
+                Ok(expected_balance)
+            ));
+
+            Ok(())
         }
     }
 }
