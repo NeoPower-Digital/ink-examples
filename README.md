@@ -33,3 +33,6 @@ Something similar to an `ERC-20` token using `traits`.
 
 ## ⛓️ Chain Extensions
 Two contracts that connect with a randomness chain extension, using `Custom Environment` and `Chain-extension builder` 
+
+## 📶 Upgradeable Contracts
+Examples of smart contracts using the `Proxy` and `set_code_hash` upgrade alternatives.
